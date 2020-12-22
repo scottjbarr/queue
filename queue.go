@@ -11,5 +11,8 @@ type Message struct {
 	ID      string
 	Handle  string
 	Payload string
-	Trace string
+	Trace   string
+
+	// GroupID is used by FIFO queues to ensure FIFO delivery for groups of messages.
+	GroupID string `json:"group_id,omitempty"`
 }

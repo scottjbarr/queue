@@ -14,15 +14,26 @@ import (
 const (
 	// SQSQueueAttributeTrace is the optional SQS Message attribute that holds a trace ID.
 	SQSQueueAttributeTrace = "trace"
+
+	// SQSTypeString is used to state the data type of an SQS Message attribute.
+	SQSTypeString = "String"
 )
 
 type SQSQueue struct {
-	URL string
+	URL  string
+	FIFO bool
 }
 
 func NewSQSQueue(url string) SQSQueue {
 	return SQSQueue{
 		URL: url,
+	}
+}
+
+func NewSQSFIFOQueue(url string) SQSQueue {
+	return SQSQueue{
+		URL:  url,
+		FIFO: true,
 	}
 }
 
@@ -65,7 +76,11 @@ func (s SQSQueue) Receive(messages chan<- Message) error {
 }
 
 func (s SQSQueue) Send(m Message) error {
-	return fmt.Errorf("Send not implemented")
+	smi := s.buildSendMessageInput(&m)
+
+	_, err := s.client().SendMessage(smi)
+
+	return err
 }
 
 func (s SQSQueue) SendBatch(messages []Message) error {
@@ -78,6 +93,18 @@ func (s SQSQueue) SendBatch(messages []Message) error {
 			Id:          &m.ID,
 			MessageBody: &m.Payload,
 		}
+
+		if s.FIFO {
+			if len(m.ID) > 0 {
+				entry.MessageDeduplicationId = &m.ID
+			}
+
+			// FIFO queues need the MessageGroupId, populate it if specified.
+			if len(m.GroupID) > 0 {
+				entry.MessageGroupId = &m.GroupID
+			}
+		}
+
 		entries = append(entries, &entry)
 	}
 
@@ -140,4 +167,44 @@ func BuildMessageFromSQSMessage(r *events.SQSMessage) *Message {
 	m.Trace = *trace.StringValue
 
 	return &m
+}
+
+// buildSendMessageInput builds a message that can queued on an SQS from a Message.
+func (q *SQSQueue) buildSendMessageInput(m *Message) *sqs.SendMessageInput {
+	smi := &sqs.SendMessageInput{
+		MessageBody: &m.Payload,
+		QueueUrl:    &q.URL,
+	}
+
+	// Check the optional Trace value
+	if len(m.Trace) > 0 {
+		q.addAttribute(smi, SQSQueueAttributeTrace, m.Trace)
+	}
+
+	if q.FIFO {
+		if len(m.ID) > 0 {
+			smi.MessageDeduplicationId = &m.ID
+		}
+
+		// FIFO queues need the MessageGroupId, populate it if specified.
+		if len(m.GroupID) > 0 {
+			smi.MessageGroupId = &m.GroupID
+		}
+	}
+
+	return smi
+}
+
+// addAttribute safely adds a single string attribute to the SQS Message attributes.
+func (q *SQSQueue) addAttribute(smi *sqs.SendMessageInput, name, value string) {
+	if smi.MessageAttributes == nil {
+		smi.MessageAttributes = map[string]*sqs.MessageAttributeValue{}
+	}
+
+	v := sqs.MessageAttributeValue{
+		DataType:    aws.String(SQSTypeString),
+		StringValue: aws.String(value),
+	}
+
+	smi.MessageAttributes[name] = &v
 }
