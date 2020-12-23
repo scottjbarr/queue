@@ -88,6 +88,10 @@ func (s SQSQueue) Send(m Message) error {
 	return err
 }
 
+func (s SQSQueue) BatchEnqueue(ctx context.Context, messages []Message) error {
+	return s.SendBatch(messages)
+}
+
 func (s SQSQueue) SendBatch(messages []Message) error {
 	entries := []*sqs.SendMessageBatchRequestEntry{}
 
