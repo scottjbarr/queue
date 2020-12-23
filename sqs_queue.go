@@ -1,6 +1,7 @@
 package queue
 
 import (
+	"context"
 	"fmt"
 	"log"
 
@@ -73,6 +74,10 @@ func (s SQSQueue) Receive(messages chan<- Message) error {
 	}
 
 	return nil
+}
+
+func (s SQSQueue) Enqueue(ctx context.Context, m *Message) error {
+	return s.Send(*m)
 }
 
 func (s SQSQueue) Send(m Message) error {
