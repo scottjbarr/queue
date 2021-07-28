@@ -7,7 +7,7 @@ type Queue interface {
 	Receive(chan<- Message) error
 	Send(Message) error
 	SendBatch([]Message) error
-	Ack(Message) error
+	Acker
 }
 
 // Enqueuer is an interface for queueing messages.
@@ -18,6 +18,10 @@ type Enqueuer interface {
 // BatchEnqueuer is an interface for queueing batches of messages.
 type BatchEnqueuer interface {
 	BatchEnqueue(context.Context, []Message) error
+}
+
+type Acker interface {
+	Ack(Message) error
 }
 
 // Message is carries message data to and from queue implementations.
