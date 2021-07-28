@@ -1,6 +1,8 @@
 package queue
 
 import (
+	"context"
+
 	"github.com/gomodule/redigo/redis"
 )
 
@@ -52,13 +54,16 @@ func (q *RedisQueue) Receive(ch chan<- Message) error {
 
 func (q *RedisQueue) SendBatch(messages []Message) error {
 	for _, m := range messages {
-
 		if err := q.Send(m); err != nil {
 			return err
 		}
 	}
 
 	return nil
+}
+
+func (q *RedisQueue) Enqueue(ctx context.Context, m *Message) error {
+	return q.Send(*m)
 }
 
 // Enqueue adds a message to the queue.
