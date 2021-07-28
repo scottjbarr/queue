@@ -3,7 +3,7 @@ package queue
 import (
 	"context"
 	"fmt"
-	"log"
+	"os"
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-sdk-go/aws"
@@ -18,50 +18,62 @@ const (
 
 	// SQSTypeString is used to state the data type of an SQS Message attribute.
 	SQSTypeString = "String"
+
+	// SQSDefaultMaxMessages is used to take the maximum messages permitted.
+	SQSDefaultMaxMessages = int64(10)
+
+	// SQSDefaultWaitTime is to specify the maximum time permitted to listen for messages from SQS.
+	SQSDefaultWaitTime = int64(20)
 )
 
+// SQSQueue is provides access to AWS SQS.
 type SQSQueue struct {
-	URL  string
-	FIFO bool
+	URL         string
+	FIFO        bool
+	Region      string
+	MaxMessages int64
+	WaitTime    int64
 }
 
+// NewSQSQuere returns a new SQSQueue.
+//
+// By default the env var AWS_DEFAULT_REGION will be used to determine which region to use.
 func NewSQSQueue(url string) SQSQueue {
 	return SQSQueue{
-		URL: url,
+		URL:         url,
+		Region:      os.Getenv("AWS_DEFAULT_REGION"),
+		MaxMessages: SQSDefaultMaxMessages,
+		WaitTime:    SQSDefaultWaitTime,
 	}
 }
 
+// NewSQSFIFOQueue returna a new SQSQueue configued to interact with a FIFO queue.
 func NewSQSFIFOQueue(url string) SQSQueue {
-	return SQSQueue{
-		URL:  url,
-		FIFO: true,
-	}
+	q := NewSQSQueue(url)
+	q.FIFO = true
+
+	return q
 }
 
+// Receive takes messages from SQS and writes them to the channel.
 func (s SQSQueue) Receive(messages chan<- Message) error {
-	maxMessages := int64(10)
-	waitTime := int64(20)
-
 	rmin := &sqs.ReceiveMessageInput{
 		QueueUrl:            &s.URL,
-		MaxNumberOfMessages: &maxMessages,
-		WaitTimeSeconds:     &waitTime,
+		MaxNumberOfMessages: &s.MaxMessages,
+		WaitTimeSeconds:     &s.WaitTime,
 	}
 
 	// loop over all queue messages.
 	for {
 		resp, err := s.client().ReceiveMessage(rmin)
-
 		if err != nil {
 			return err
 		}
 
 		if len(resp.Messages) == 0 {
-			log.Printf("No messages")
-			return nil
+			// timed out waiting for messages.
+			continue
 		}
-
-		log.Printf("received %v messages...", len(resp.Messages))
 
 		for _, m := range resp.Messages {
 			message := Message{}
@@ -76,10 +88,12 @@ func (s SQSQueue) Receive(messages chan<- Message) error {
 	return nil
 }
 
+// Enqueue implements the Enqueuer interface.
 func (s SQSQueue) Enqueue(ctx context.Context, m *Message) error {
 	return s.Send(*m)
 }
 
+// Send writes a message to SQS.
 func (s SQSQueue) Send(m Message) error {
 	smi := s.buildSendMessageInput(&m)
 
@@ -88,10 +102,12 @@ func (s SQSQueue) Send(m Message) error {
 	return err
 }
 
+// BatchEnqueue implements the BatchEnqueuer interface.
 func (s SQSQueue) BatchEnqueue(ctx context.Context, messages []Message) error {
 	return s.SendBatch(messages)
 }
 
+// SendBatch sends a batch of messages to SQS.
 func (s SQSQueue) SendBatch(messages []Message) error {
 	entries := []*sqs.SendMessageBatchRequestEntry{}
 
@@ -135,6 +151,9 @@ func (s SQSQueue) SendBatch(messages []Message) error {
 	return nil
 }
 
+// Ack implements the Acker interface.
+//
+// SQS requires specific removal of messages after reading.
 func (s SQSQueue) Ack(m Message) error {
 	dmi := &sqs.DeleteMessageInput{
 		QueueUrl:      &s.URL,
@@ -146,10 +165,11 @@ func (s SQSQueue) Ack(m Message) error {
 	return err
 }
 
+// client returns a new SQS client.
 func (s SQSQueue) client() *sqs.SQS {
-	awsConfig := aws.Config{}
+	awsConfig := aws.NewConfig().WithRegion(s.Region)
 
-	return sqs.New(session.New(), &awsConfig)
+	return sqs.New(session.New(), awsConfig)
 }
 
 // BuildMessageFromSQSEventsMessage converts an events.SQSMessage into a Message.
