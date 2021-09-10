@@ -4,34 +4,31 @@ import (
 	"context"
 
 	"github.com/gomodule/redigo/redis"
-)
-
-const (
-	// redisCmdBlpop is the BLPOP command
-	redisCmdBlpop = "BLPOP"
-
-	// redisCmdRpush is the RPUSH command
-	redisCmdRpush = "RPUSH"
+	redigo "github.com/gomodule/redigo/redis"
 )
 
 // RedisQueue works with a Redis instance to satisfy most of the Queue unterface, except
-type RedisQueue struct {
+type RedisPoolQueue struct {
 	Topic string
-	conn  redis.Conn
+	pool  *redis.Pool
 }
 
-func NewRedisQueue(conn redis.Conn, topic string) *RedisQueue {
-	return &RedisQueue{
-		conn:  conn,
+func NewRedisPoolQueue(pool *redigo.Pool, topic string) *RedisPoolQueue {
+	return &RedisPoolQueue{
+		pool:  pool,
 		Topic: topic,
 	}
 }
 
 // Receive reads messages from the topic and pushes them to the channel.
-func (q *RedisQueue) Receive(ch chan<- Message) error {
+func (q *RedisPoolQueue) Receive(ch chan<- Message) error {
+	conn := q.pool.Get()
+	defer conn.Close()
+
 	for {
-		resp, err := redis.ByteSlices(q.conn.Do(redisCmdBlpop, q.Topic, 0))
+		resp, err := redis.ByteSlices(conn.Do(redisCmdBlpop, q.Topic, 0))
 		if err != nil {
+			conn.Close()
 			return err
 		}
 
@@ -52,7 +49,7 @@ func (q *RedisQueue) Receive(ch chan<- Message) error {
 	return nil
 }
 
-func (q *RedisQueue) SendBatch(messages []Message) error {
+func (q *RedisPoolQueue) SendBatch(messages []Message) error {
 	for _, m := range messages {
 		if err := q.Send(m); err != nil {
 			return err
@@ -62,11 +59,11 @@ func (q *RedisQueue) SendBatch(messages []Message) error {
 	return nil
 }
 
-func (q *RedisQueue) Enqueue(ctx context.Context, m *Message) error {
+func (q *RedisPoolQueue) Enqueue(ctx context.Context, m *Message) error {
 	return q.Send(*m)
 }
 
-func (q *RedisQueue) BatchEnqueue(ctx context.Context, msgs []Message) error {
+func (q *RedisPoolQueue) BatchEnqueue(ctx context.Context, msgs []Message) error {
 	for _, m := range msgs {
 		if err := q.Enqueue(ctx, &m); err != nil {
 			return err
@@ -77,19 +74,22 @@ func (q *RedisQueue) BatchEnqueue(ctx context.Context, msgs []Message) error {
 }
 
 // Enqueue adds a message to the queue.
-func (q *RedisQueue) Send(m Message) error {
+func (q *RedisPoolQueue) Send(m Message) error {
 	b := []byte(m.Payload)
 
-	if _, err := q.conn.Do(redisCmdRpush, q.Topic, b); err != nil {
+	conn := q.pool.Get()
+	defer conn.Close()
+
+	if _, err := conn.Do(redisCmdRpush, q.Topic, b); err != nil {
 		return err
 	}
 
-	q.conn.Flush()
+	conn.Flush()
 
 	return nil
 }
 
 // Ack is not support by Redis, so provide a NOOP implementation.
-func (q *RedisQueue) Ack(_ Message) error {
+func (q *RedisPoolQueue) Ack(_ Message) error {
 	return nil
 }
