@@ -26,3 +26,7 @@ func (q *MemoryQueue) BatchEnqueue(ctx context.Context, msg []Message) error {
 
 	return nil
 }
+
+func (q *MemoryQueue) Ack(ctx context.Context, m *Message) error {
+	return nil
+}
