@@ -33,7 +33,7 @@ type BatchEnqueuer interface {
 }
 
 type Acker interface {
-	Ack(Message) error
+	Ack(context.Context, *Message) error
 }
 
 // Message is carries message data to and from queue implementations.

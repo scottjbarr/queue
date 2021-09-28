@@ -154,7 +154,7 @@ func (s SQSQueue) SendBatch(messages []Message) error {
 // Ack implements the Acker interface.
 //
 // SQS requires specific removal of messages after reading.
-func (s SQSQueue) Ack(m Message) error {
+func (s SQSQueue) Ack(ctx context.Context, m *Message) error {
 	dmi := &sqs.DeleteMessageInput{
 		QueueUrl:      &s.URL,
 		ReceiptHandle: &m.Handle,

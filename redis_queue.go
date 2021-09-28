@@ -90,6 +90,6 @@ func (q *RedisQueue) Send(m Message) error {
 }
 
 // Ack is not support by Redis, so provide a NOOP implementation.
-func (q *RedisQueue) Ack(_ Message) error {
+func (q *RedisQueue) Ack(_ context.Context, _ *Message) error {
 	return nil
 }
