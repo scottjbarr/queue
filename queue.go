@@ -53,7 +53,7 @@ func New(uri string) (Queue, error) {
 		return nil, err
 	}
 
-	if strings.HasPrefix(uri, "https://sqs.") {
+	if strings.Contains(uri, ".amazonaws.com/") {
 		if strings.HasSuffix(uri, ".fifo") {
 			// FIFO queue always ends with ".fifo"
 			q := NewSQSFIFOQueue(uri)

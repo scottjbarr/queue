@@ -49,18 +49,18 @@ func TestNew_SQS(t *testing.T) {
 	}{
 		{
 			name: "sqs",
-			url:  "sqs://example.com/queuename",
+			url:  "https://region.queue.amazonaws.com/1111/name",
 			want: &SQSQueue{
-				URL:         "sqs://example.com/queuename",
+				URL:         "https://region.queue.amazonaws.com/1111/name",
 				MaxMessages: 10,
 				WaitTime:    20,
 			},
 		},
 		{
 			name: "sqs fifo",
-			url:  "sqs://example.com/queuename.fifo",
+			url:  "https://region.queue.amazonaws.com/1111/name.fifo",
 			want: &SQSQueue{
-				URL:         "sqs://example.com/queuename.fifo",
+				URL:         "https://region.queue.amazonaws.com/1111/name.fifo",
 				FIFO:        true,
 				MaxMessages: 10,
 				WaitTime:    20,
