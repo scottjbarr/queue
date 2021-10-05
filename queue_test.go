@@ -13,7 +13,7 @@ func TestNew_Redis(t *testing.T) {
 	}{
 		{
 			name: "redis",
-			url:  "redis://localhost:5555/foo",
+			url:  "redis://localhost:6379/foo",
 			want: "foo",
 		},
 	}
@@ -25,7 +25,7 @@ func TestNew_Redis(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			q, ok := got.(*RedisQueue)
+			q, ok := got.(*RedisPoolQueue)
 			if !ok {
 				t.Fatalf("got %#+v", got)
 			}
