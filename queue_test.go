@@ -66,6 +66,16 @@ func TestNew_SQS(t *testing.T) {
 				WaitTime:    20,
 			},
 		},
+		{
+			name: "sqs fifo 2",
+			url:  "https://sqs.region.amazonaws.com/1111/name.fifo",
+			want: &SQSQueue{
+				URL:         "https://sqs.region.amazonaws.com/1111/name.fifo",
+				FIFO:        true,
+				MaxMessages: 10,
+				WaitTime:    20,
+			},
+		},
 	}
 
 	for _, tt := range tests {
