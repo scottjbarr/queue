@@ -86,3 +86,23 @@ func New(uri string) (Queue, error) {
 
 	return nil, errors.New("Unsupported scheme")
 }
+
+// BatchMessages splits a []Message slice into batches of a given size.
+//
+// Some queue providers such as SQS have limits on batch enqueueing.
+func BatchMessages(messages []Message, chunkSize int) [][]Message {
+	var batches [][]Message
+
+	for i := 0; i < len(messages); i += chunkSize {
+		end := i + chunkSize
+
+		// necessary check to avoid slicing beyond slice capacity
+		if end > len(messages) {
+			end = len(messages)
+		}
+
+		batches = append(batches, messages[i:end])
+	}
+
+	return batches
+}
