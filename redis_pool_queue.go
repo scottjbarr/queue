@@ -1,8 +1,6 @@
 package queue
 
 import (
-	"context"
-
 	"github.com/gomodule/redigo/redis"
 	redigo "github.com/gomodule/redigo/redis"
 )
@@ -59,13 +57,13 @@ func (q *RedisPoolQueue) SendBatch(messages []Message) error {
 	return nil
 }
 
-func (q *RedisPoolQueue) Enqueue(ctx context.Context, m *Message) error {
+func (q *RedisPoolQueue) Enqueue(m *Message) error {
 	return q.Send(*m)
 }
 
-func (q *RedisPoolQueue) BatchEnqueue(ctx context.Context, msgs []Message) error {
+func (q *RedisPoolQueue) BatchEnqueue(msgs []Message) error {
 	for _, m := range msgs {
-		if err := q.Enqueue(ctx, &m); err != nil {
+		if err := q.Enqueue(&m); err != nil {
 			return err
 		}
 	}
@@ -90,6 +88,6 @@ func (q *RedisPoolQueue) Send(m Message) error {
 }
 
 // Ack is not support by Redis, so provide a NOOP implementation.
-func (q *RedisPoolQueue) Ack(_ context.Context, _ *Message) error {
+func (q *RedisPoolQueue) Ack(_ *Message) error {
 	return nil
 }

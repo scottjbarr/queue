@@ -1,7 +1,5 @@
 package queue
 
-import "context"
-
 type MemoryQueue struct {
 	Items []Message
 }
@@ -12,21 +10,21 @@ func NewMemoryQueue() *MemoryQueue {
 	}
 }
 
-func (q *MemoryQueue) Enqueue(ctx context.Context, m *Message) error {
+func (q *MemoryQueue) Enqueue(m *Message) error {
 	q.Items = append(q.Items, *m)
 
 	return nil
 }
 
-func (q *MemoryQueue) BatchEnqueue(ctx context.Context, msg []Message) error {
+func (q *MemoryQueue) BatchEnqueue(msg []Message) error {
 	for _, m := range msg {
 		// ignoring errors from mock
-		_ = q.Enqueue(ctx, &m)
+		_ = q.Enqueue(&m)
 	}
 
 	return nil
 }
 
-func (q *MemoryQueue) Ack(ctx context.Context, m *Message) error {
+func (q *MemoryQueue) Ack(m *Message) error {
 	return nil
 }

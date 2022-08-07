@@ -1,7 +1,6 @@
 package queue
 
 import (
-	"context"
 	"fmt"
 	"os"
 
@@ -89,7 +88,7 @@ func (s SQSQueue) Receive(messages chan<- Message) error {
 }
 
 // Enqueue implements the Enqueuer interface.
-func (s SQSQueue) Enqueue(ctx context.Context, m *Message) error {
+func (s SQSQueue) Enqueue(m *Message) error {
 	return s.Send(*m)
 }
 
@@ -103,7 +102,7 @@ func (s SQSQueue) Send(m Message) error {
 }
 
 // BatchEnqueue implements the BatchEnqueuer interface.
-func (s SQSQueue) BatchEnqueue(ctx context.Context, messages []Message) error {
+func (s SQSQueue) BatchEnqueue(messages []Message) error {
 	return s.SendBatch(messages)
 }
 
@@ -154,7 +153,7 @@ func (s SQSQueue) SendBatch(messages []Message) error {
 // Ack implements the Acker interface.
 //
 // SQS requires specific removal of messages after reading.
-func (s SQSQueue) Ack(ctx context.Context, m *Message) error {
+func (s SQSQueue) Ack(m *Message) error {
 	dmi := &sqs.DeleteMessageInput{
 		QueueUrl:      &s.URL,
 		ReceiptHandle: &m.Handle,

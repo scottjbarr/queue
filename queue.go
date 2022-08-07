@@ -1,7 +1,6 @@
 package queue
 
 import (
-	"context"
 	"errors"
 	"net/url"
 	"strings"
@@ -24,16 +23,16 @@ type Writer interface {
 
 // Enqueuer is an interface for queueing messages.
 type Enqueuer interface {
-	Enqueue(context.Context, *Message) error
+	Enqueue(*Message) error
 }
 
 // BatchEnqueuer is an interface for queueing batches of messages.
 type BatchEnqueuer interface {
-	BatchEnqueue(context.Context, []Message) error
+	BatchEnqueue([]Message) error
 }
 
 type Acker interface {
-	Ack(context.Context, *Message) error
+	Ack(*Message) error
 }
 
 // Message is carries message data to and from queue implementations.
