@@ -63,11 +63,12 @@ func New(uri string) (Queue, error) {
 			return &q, nil
 		}
 	} else if u.Scheme == "redis" {
-		pool, err := redis.NewPool(uri)
+		u, err := url.Parse(uri)
 		if err != nil {
 			return nil, err
 		}
 
+		pool := redis.NewPool(u)
 		conn := pool.Get()
 		defer conn.Close()
 
