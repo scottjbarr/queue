@@ -19,7 +19,7 @@ func NewRedisPoolQueue(pool *redigo.Pool, topic string) *RedisPoolQueue {
 }
 
 // Receive reads messages from the topic and pushes them to the channel.
-func (q *RedisPoolQueue) Receive(ch chan<- Message) error {
+func (q *RedisPoolQueue) Receive(ch chan Message, done chan bool) error {
 	conn := q.pool.Get()
 	defer conn.Close()
 
