@@ -17,7 +17,7 @@ type Queue interface {
 }
 
 type Receiver interface {
-	Receive(chan Message, chan bool) error
+	Receive(chan Message) error
 }
 
 type ReceivingAcker interface {

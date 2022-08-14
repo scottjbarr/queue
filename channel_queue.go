@@ -1,9 +1,8 @@
 package queue
 
-import (
-	"log"
-)
-
+// ChannelQueue is a queue that manages messages over a channel.
+//
+// Ensure the channel size is sufficient.
 type ChannelQueue struct {
 	Input chan Message
 }
@@ -22,7 +21,7 @@ func (q *ChannelQueue) Enqueue(m *Message) error {
 
 func (q *ChannelQueue) BatchEnqueue(msg []Message) error {
 	for _, m := range msg {
-		// ignoring errors for this implementation
+		// ignoring errors for this implementation as Enqueue cannot return an error.
 		_ = q.Enqueue(&m)
 	}
 
@@ -30,7 +29,7 @@ func (q *ChannelQueue) BatchEnqueue(msg []Message) error {
 }
 
 func (q *ChannelQueue) Ack(m *Message) error {
-	log.Printf("INFO ChannelQueue Ack")
+	// there is no ack for this implementation
 	return nil
 }
 
@@ -40,7 +39,6 @@ func (q *ChannelQueue) Receive(ch chan Message, done chan bool) error {
 		case m := <-q.Input:
 			ch <- m
 		case <-done:
-			log.Printf("INFO ChannelQueue done")
 			break
 		}
 	}

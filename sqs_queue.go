@@ -52,51 +52,31 @@ func NewSQSFIFOQueue(url string) SQSQueue {
 }
 
 // Receive takes messages from SQS and writes them to the channel.
-func (s SQSQueue) Receive(messages chan Message, done chan bool) error {
+func (s SQSQueue) Receive(messages chan Message) error {
 	rmin := &sqs.ReceiveMessageInput{
 		QueueUrl:            &s.URL,
 		MaxNumberOfMessages: &s.MaxMessages,
 		WaitTimeSeconds:     &s.WaitTime,
 	}
 
-	// receives messages from the queue are written to this channel as a
-	receiveErr := make(chan error)
-
-	// loop over all queue messages.
-	go func() {
-		for {
-			resp, err := s.client().ReceiveMessage(rmin)
-			if err != nil {
-				receiveErr <- err
-				continue
-			}
-
-			if len(resp.Messages) == 0 {
-				// timed out waiting for messages.
-				continue
-			}
-
-			for _, m := range resp.Messages {
-				message := Message{}
-				message.ID = *m.MessageId
-				message.Handle = *m.ReceiptHandle
-				message.Payload = *m.Body
-
-				// received <- message
-				messages <- message
-			}
-		}
-	}()
-
-	// keep reading messages until we receive a "done" message or an error
 	for {
-		select {
-		// case msg := <-received:
-		// 	messages <- msg
-		case err := <-receiveErr:
+		resp, err := s.client().ReceiveMessage(rmin)
+		if err != nil {
 			return err
-		case <-done:
-			return nil
+		}
+
+		if len(resp.Messages) == 0 {
+			// timed out waiting for messages.
+			continue
+		}
+
+		for _, m := range resp.Messages {
+			message := Message{}
+			message.ID = *m.MessageId
+			message.Handle = *m.ReceiptHandle
+			message.Payload = *m.Body
+
+			messages <- message
 		}
 	}
 
