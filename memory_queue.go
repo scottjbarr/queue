@@ -1,7 +1,10 @@
 package queue
 
+import "errors"
+
 type MemoryQueue struct {
 	Items []Message
+	// Input chan Message
 }
 
 func NewMemoryQueue() *MemoryQueue {
@@ -26,5 +29,9 @@ func (q *MemoryQueue) BatchEnqueue(msg []Message) error {
 }
 
 func (q *MemoryQueue) Ack(m *Message) error {
-	return nil
+	return errors.New("not implemented")
+}
+
+func (q *MemoryQueue) Receive(ch chan Message) error {
+	return errors.New("not implemented")
 }

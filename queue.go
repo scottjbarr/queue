@@ -10,9 +10,18 @@ import (
 
 // Queue is the complete interface for a read/write, relaible QuUeue.
 type Queue interface {
-	Receive(chan<- Message) error
+	Receiver
 	Enqueuer
 	BatchEnqueuer
+	Acker
+}
+
+type Receiver interface {
+	Receive(chan Message) error
+}
+
+type ReceivingAcker interface {
+	Receiver
 	Acker
 }
 

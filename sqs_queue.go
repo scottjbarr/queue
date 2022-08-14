@@ -2,7 +2,6 @@ package queue
 
 import (
 	"fmt"
-	"os"
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-sdk-go/aws"
@@ -29,7 +28,6 @@ const (
 type SQSQueue struct {
 	URL         string
 	FIFO        bool
-	Region      string
 	MaxMessages int64
 	WaitTime    int64
 }
@@ -40,7 +38,6 @@ type SQSQueue struct {
 func NewSQSQueue(url string) SQSQueue {
 	return SQSQueue{
 		URL:         url,
-		Region:      os.Getenv("AWS_DEFAULT_REGION"),
 		MaxMessages: SQSDefaultMaxMessages,
 		WaitTime:    SQSDefaultWaitTime,
 	}
@@ -55,14 +52,13 @@ func NewSQSFIFOQueue(url string) SQSQueue {
 }
 
 // Receive takes messages from SQS and writes them to the channel.
-func (s SQSQueue) Receive(messages chan<- Message) error {
+func (s SQSQueue) Receive(messages chan Message) error {
 	rmin := &sqs.ReceiveMessageInput{
 		QueueUrl:            &s.URL,
 		MaxNumberOfMessages: &s.MaxMessages,
 		WaitTimeSeconds:     &s.WaitTime,
 	}
 
-	// loop over all queue messages.
 	for {
 		resp, err := s.client().ReceiveMessage(rmin)
 		if err != nil {
@@ -166,7 +162,7 @@ func (s SQSQueue) Ack(m *Message) error {
 
 // client returns a new SQS client.
 func (s SQSQueue) client() *sqs.SQS {
-	awsConfig := aws.NewConfig().WithRegion(s.Region)
+	awsConfig := aws.NewConfig()
 
 	return sqs.New(session.New(), awsConfig)
 }
