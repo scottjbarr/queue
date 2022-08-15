@@ -11,10 +11,12 @@ type Runner interface {
 }
 
 type HandlerFunc func(Message) error
-type BackoffFunc func(count int)
+type BackoffFunc func(string, int, error)
 
-func DefaultWorkerBackoffFunc(count int) {
-	time.Sleep(time.Second * time.Duration(count*30))
+func DefaultWorkerBackoffFunc(name string, count int, err error) {
+	d := time.Second * time.Duration(count*1)
+	log.Printf("INFO %s backing off for %v", name, d)
+	time.Sleep(d)
 }
 
 type Worker struct {
@@ -40,10 +42,11 @@ func NewWorker(name string, r ReceivingAcker, h HandlerFunc) *Worker {
 func (w *Worker) Start() error {
 	log.Printf("INFO %s starting", w.Name)
 
-	failures := int(0)
-
 	// receive messages from the queue
 	go func() {
+		// Track consecutive when receiving messages.
+		failures := int(0)
+
 		for {
 			if err := w.Queue.Receive(w.ChannelWrite); err != nil {
 				log.Printf("ERROR %s err = %v", w.Name, err)
@@ -52,7 +55,7 @@ func (w *Worker) Start() error {
 				failures++
 
 				// backoff
-				w.BackoffFunc(failures)
+				w.BackoffFunc(w.Name, failures, err)
 
 				continue
 			}
@@ -63,6 +66,8 @@ func (w *Worker) Start() error {
 	}()
 
 	// read from the message and done channels
+	failures := int(0)
+
 	for {
 		select {
 		case msg := <-w.ChannelWrite:
@@ -70,13 +75,22 @@ func (w *Worker) Start() error {
 			//
 			// Pass the message to the handler.
 			if err := w.HandleFunc(msg); err != nil {
+				failures++
+
+				// backoff
+				w.BackoffFunc(w.Name, failures, err)
+
 				log.Printf("ERROR %s processing message %+v : err = %v", w.Name, msg.Payload, err)
 				continue
 			}
 
 			if err := w.Queue.Ack(&msg); err != nil {
 				log.Printf("ERROR %s could not ack message %v", w.Name, msg.Handle)
+				continue
 			}
+
+			// reset failure count
+			failures = 0
 
 		case <-w.done:
 			// we've received the "done" message. Stop the Receiver.
