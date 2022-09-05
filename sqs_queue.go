@@ -164,7 +164,11 @@ func (s SQSQueue) Ack(m *Message) error {
 func (s SQSQueue) client() *sqs.SQS {
 	awsConfig := aws.NewConfig()
 
-	return sqs.New(session.New(), awsConfig)
+	sess := session.Must(session.NewSessionWithOptions(session.Options{
+		SharedConfigState: session.SharedConfigEnable,
+	}))
+
+	return sqs.New(sess, awsConfig)
 }
 
 // BuildMessageFromSQSEventsMessage converts an events.SQSMessage into a Message.
