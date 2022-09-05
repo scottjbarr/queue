@@ -2,6 +2,7 @@ package queue
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-sdk-go/aws"
@@ -166,6 +167,7 @@ func (s SQSQueue) client() *sqs.SQS {
 
 	sess := session.Must(session.NewSessionWithOptions(session.Options{
 		SharedConfigState: session.SharedConfigEnable,
+		Profile:           os.Getenv("AWS_PROFILE"),
 	}))
 
 	return sqs.New(sess, awsConfig)
