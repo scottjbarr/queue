@@ -91,6 +91,14 @@ func New(uri string) (Queue, error) {
 		q := NewRedisPoolQueue(pool, key)
 
 		return q, nil
+	} else if u.Scheme == "memory" {
+		q := NewMemoryQueue()
+
+		return q, nil
+	} else if u.Scheme == "noop" {
+		q := NewNoopQueue()
+
+		return q, nil
 	}
 
 	return nil, errors.New("Unsupported scheme")
