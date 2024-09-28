@@ -3,6 +3,7 @@
 A package that provides queue implementations for Redis, SQS, Memory and No-op.
 
 | Name   | Example url                                 |
+|--------|---------------------------------------------|
 | Redis  | redis://...                                 |
 | SQS    | https://sqs-host.amazonaws.com/account/name |
 | Memory | memory://                                   |
